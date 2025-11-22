@@ -37,34 +37,44 @@ function extractGender(desc) {
     return "UNISEX";
 }
 
-
-
-// === FULL EXTRACTOR (size + gender + normalization) ===
 function extractSizeAndGender(description) {
     if (!description) return null;
 
     const text = description.toLowerCase();
 
-    // 1️⃣ Try to match ANY size
+    // 1️⃣ Try to match ANY valid size
     const match = text.match(SIZE_REGEX);
     if (!match) return null;
 
     let size = match[0].toUpperCase();
 
-    // 2️⃣ Normalize months
+    // 2️⃣ SAFE & CORRECT NORMALIZATION
     size = size
-        .replace(/M\b/, " MESES")
-        .replace(/\b(\d{1,2})\/(\d{1,2})\s?M/i, "$1-$2 MESES")
-        .replace(/\b(\d{1,2})-(\d{1,2})\s?M/i, "$1-$2 MESES")
-        .replace(/MES$/, " MESES")
-        .replace(/MESES?$/, " MESES");
+        // ---- MONTH RANGES ----
+        .replace(
+            /\b(\d{1,2})\s*[\/-]\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+            "$1-$2 MESES"
+        )
 
-    // 3️⃣ Normalize years
-    size = size
-        .replace(/ANOS?/, " ANOS")
-        .replace(/\bY\b/, " ANOS");
+        // ---- SINGLE MONTH ----
+        .replace(
+            /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+            "$1 MESES"
+        )
 
-    // 4️⃣ Gender
+        // ---- YEAR RANGES ----
+        .replace(
+            /\b(\d{1,2})\s*[\/-]\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
+            "$1-$2 ANOS"
+        )
+
+        // ---- SINGLE YEAR ----
+        .replace(
+            /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
+            "$1 ANOS"
+        );
+
+    // 3️⃣ Detect gender
     const gender = extractGender(text);
 
     return { size: size.trim(), gender };
@@ -289,27 +299,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // APPLY ALL FILTERS
-    function filterTable() {
-        const rows = document.querySelectorAll("#itemsBody tr");
+   function filterTable() {
+    const rows = document.querySelectorAll("#itemsBody tr");
 
-        rows.forEach(row => {
-            let visible = true;
+    rows.forEach(row => {
+        let visible = true;
 
-            // loop through the 3 columns
-            for (let col = 0; col < 3; col++) {
-                const filter = activeFilters[col];
-                if (!filter) continue;
+        for (let col = 0; col < 3; col++) {
+            const filter = activeFilters[col];
+            if (!filter) continue;
 
-                const cell = row.children[col].innerText.toLowerCase();
-                if (!cell.includes(filter)) {
-                    visible = false;
-                    break;
-                }
+            const cell = row.children[col];
+            if (!cell) continue;
+
+            // For input columns (desc and trade)
+            let content;
+
+            if (col === 1 || col === 2) {
+                const input = cell.querySelector("input");
+                content = input ? input.value.toLowerCase() : "";
+            } else {
+                content = cell.innerText.toLowerCase(); // column 0
             }
 
-            row.style.display = visible ? "" : "none";
-        });
-    }
+            if (!content.includes(filter)) {
+                visible = false;
+                break;
+            }
+        }
+
+        row.style.display = visible ? "" : "none";
+    });
+}
+
 
     enableHeaderSearch(document.getElementById("th-number"), "Nº...", 0, "80px");
     enableHeaderSearch(document.getElementById("th-desc"), "Descrição...", 1);
