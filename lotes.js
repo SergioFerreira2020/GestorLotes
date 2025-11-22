@@ -189,7 +189,7 @@ window.addEventListener("scroll", () => {
     const height = document.body.offsetHeight;
 
     if (bottom >= height - 300) {
-        loadBatch(existingLotes); // load next batch
+        loadBatch(existing); // load next batch
     }
 });
 
