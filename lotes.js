@@ -123,37 +123,71 @@ for (let i = 1; i <= 400; i++) {
    - Creates lote1, lote2, ..., lote400 if they do NOT exist
    - Loads existing data into the table
 ----------------------------------------------------- */
-async function initializeLotes() {
-    // 1) Read ALL documents at once
-    const snap = await getDocs(collection(db, "lotes"));
 
+// How many lotes to load per batch
+const BATCH_SIZE = 40;
+let currentBatch = 0;
+
+// Loads one lote by ID
+async function loadSingleLote(i, existing) {
+    const descInput = document.querySelector(`input[data-id="${i}"][data-field="description"]`);
+    const tradeInput = document.querySelector(`input[data-id="${i}"][data-field="trade"]`);
+
+    if (!descInput || !tradeInput) return;
+
+    const id = `${i}`;
+
+    if (existing[id]) {
+        // Lote exists → load data
+        descInput.value = existing[id].description ?? "";
+        tradeInput.value = existing[id].trade ?? "";
+    } else {
+        // Lote does NOT exist → create empty document
+        await setDoc(doc(db, "lotes", id), {
+            description: "",
+            trade: ""
+        });
+    }
+}
+
+// Loads a batch (40 by default)
+async function loadBatch(existing) {
+    const start = currentBatch * BATCH_SIZE + 1;
+    const end = Math.min(start + BATCH_SIZE - 1, 400);
+
+    for (let i = start; i <= end; i++) {
+        loadSingleLote(i, existing);
+    }
+
+    currentBatch++;
+}
+
+// Reads all documents ONCE and then loads visually in batches
+async function initializeLotes() {
+    const snap = await getDocs(collection(db, "lotes"));
     const existing = {};
+
     snap.forEach(docSnap => {
         existing[docSnap.id] = docSnap.data();
     });
 
-    // 2) Populate the table inputs
-    for (let i = 1; i <= 400; i++) {
-        const id = `${i}`;
+    // Load first batch instantly
+    await loadBatch(existing);
 
-        const descInput = document.querySelector(`input[data-id="${i}"][data-field="description"]`);
-        const tradeInput = document.querySelector(`input[data-id="${i}"][data-field="trade"]`);
-
-        if (existing[id]) {
-            // Document exists → load into table
-            descInput.value = existing[id].description ?? "";
-            tradeInput.value = existing[id].trade ?? "";
-        } else {
-            // Missing → create EMPTY document
-            await setDoc(doc(db, "lotes", id), {
-                description: "",
-                trade: ""
-            });
-        }
-    }
-
-    console.log("Lotes carregados (rápido)!");
+    console.log("Primeira batch carregada!");
 }
+
+window.addEventListener("scroll", () => {
+    const bottom = window.innerHeight + window.scrollY;
+    const height = document.body.offsetHeight;
+
+    if (bottom >= height - 300) {
+        loadBatch(existingLotes); // load next batch
+    }
+});
+
+
+
 
 
 initializeLotes();
