@@ -50,25 +50,6 @@ document.getElementById("modalClose").addEventListener("click", closeModal);
 
 
 
-/** INFO MODAL **/
-export function openInfoModal(title, htmlContent) {
-    document.getElementById("modalTitle").textContent = title;
-    document.getElementById("modalContent").innerHTML = htmlContent;
-
-    document.getElementById("modalOverlay").classList.remove("hidden");
-}
-
-export function closeInfoModal() {
-    document.getElementById("modalOverlay").classList.add("hidden");
-}
-
-document.getElementById("modalOverlay").addEventListener("click", e => {
-    if (e.target.id === "modalOverlay") closeInfoModal();
-});
-document.getElementById("modalClose").addEventListener("click", closeInfoModal);
-
-
-
 
 /** CONFIRMATION MODAL **/
 export function openConfirmModal(title, messageHtml, onConfirm) {
