@@ -124,37 +124,37 @@ for (let i = 1; i <= 400; i++) {
    - Loads existing data into the table
 ----------------------------------------------------- */
 async function initializeLotes() {
+    // 1) Read ALL documents at once
+    const snap = await getDocs(collection(db, "lotes"));
+
+    const existing = {};
+    snap.forEach(docSnap => {
+        existing[docSnap.id] = docSnap.data();
+    });
+
+    // 2) Populate the table inputs
     for (let i = 1; i <= 400; i++) {
-        const loteId = `${i}`;
-        const loteRef = doc(db, "lotes", loteId);
+        const id = `${i}`;
 
-        try {
-            const snap = await getDoc(loteRef);
+        const descInput = document.querySelector(`input[data-id="${i}"][data-field="description"]`);
+        const tradeInput = document.querySelector(`input[data-id="${i}"][data-field="trade"]`);
 
-            if (!snap.exists()) {
-                // Create empty lote
-                await setDoc(loteRef, {
-                    description: "",
-                    trade: ""
-                });
-            } else {
-                // Load existing data into the inputs
-                const data = snap.data();
-
-                document.querySelector(`input[data-id="${i}"][data-field="description"]`).value =
-                    data.description ?? "";
-
-                document.querySelector(`input[data-id="${i}"][data-field="trade"]`).value =
-                    data.trade ?? "";
-            }
-
-        } catch (err) {
-            console.error(`Erro ao carregar lote ${i}:`, err);
+        if (existing[id]) {
+            // Document exists → load into table
+            descInput.value = existing[id].description ?? "";
+            tradeInput.value = existing[id].trade ?? "";
+        } else {
+            // Missing → create EMPTY document
+            await setDoc(doc(db, "lotes", id), {
+                description: "",
+                trade: ""
+            });
         }
     }
 
-    console.log("Lotes carregados!");
+    console.log("Lotes carregados (rápido)!");
 }
+
 
 initializeLotes();
 
