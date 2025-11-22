@@ -1,5 +1,13 @@
 // lotes.js
-import { db, doc, setDoc, getDoc } from "./firebase.js";
+import {
+    db,
+    doc,
+    setDoc,
+    getDoc,
+    getDocs,
+    collection
+} from "./firebase.js";
+
 
 const tbody = document.getElementById("itemsBody");
 
