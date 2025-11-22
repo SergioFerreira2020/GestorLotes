@@ -11,6 +11,7 @@ import {
 
 const tbody = document.getElementById("itemsBody");
 
+const existing = {};
 // === MASTER SIZE REGEX (handles almost everything) ===
 const SIZE_REGEX = new RegExp(
   "\\b(XXS|XS|S|M|L|XL|XXL|XXXL)\\b" +            // letter sizes
@@ -173,7 +174,6 @@ async function loadBatch(existing) {
 // Reads all documents ONCE and then loads visually in batches
 async function initializeLotes() {
     const snap = await getDocs(collection(db, "lotes"));
-    const existing = {};
     snap.forEach(docSnap => {
         existing[docSnap.id] = docSnap.data();
     });
@@ -189,7 +189,7 @@ window.addEventListener("scroll", () => {
     const height = document.body.offsetHeight;
 
     if (bottom >= height - 300) {
-        loadBatch(existing); // load next batch
+        loadBatch(existingLotes); // load next batch
     }
 });
 
