@@ -11,7 +11,7 @@ import {
 
 const tbody = document.getElementById("itemsBody");
 
-const existing = {};
+let existing = {};
 // === MASTER SIZE REGEX (handles almost everything) ===
 const SIZE_REGEX = new RegExp(
   "\\b(XXS|XS|S|M|L|XL|XXL|XXXL)\\b" +            // letter sizes
