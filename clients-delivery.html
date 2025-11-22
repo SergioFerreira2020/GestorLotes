@@ -40,29 +40,18 @@
 <!-- INFO MODAL (already existed) -->
 <div id="modalOverlay" class="modal-overlay hidden">
     <div class="modal">
-        <h3 id="modalTitle">Cliente</h3>
+        <h3 id="modalTitle">Título</h3>
 
-        <div id="modalContent"></div>
+        <div id="modalContent" class="modal-box"></div>
 
         <div id="modalButtons" style="margin-top: 15px; text-align: right;">
             <button id="modalClose" class="modal-btn-cancel">Fechar</button>
+            <button id="modalCancel" class="modal-btn-cancel hidden">Cancelar</button>
+            <button id="modalConfirm" class="modal-btn-ok hidden">Confirmar</button>
         </div>
     </div>
 </div>
 
-<!-- ✅ NEW: CONFIRMATION MODAL (required by openConfirmModal) -->
-<div id="confirmOverlay" class="modal-overlay hidden">
-    <div class="modal">
-        <h3 id="confirmTitle">Confirmar</h3>
-
-        <div id="confirmMessage"></div>
-
-        <div class="modal-buttons" style="margin-top: 15px; text-align: right;">
-            <button id="confirmCancel" class="modal-btn-cancel">Cancelar</button>
-            <button id="confirmOk" class="modal-btn-ok">Confirmar</button>
-        </div>
-    </div>
-</div>
 
 </body>
 </html>
