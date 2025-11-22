@@ -9,7 +9,6 @@ import {
 } from "./firebase.js";
 
 
-const existing = {};
 const tbody = document.getElementById("itemsBody");
 
 // === MASTER SIZE REGEX (handles almost everything) ===
@@ -174,7 +173,8 @@ async function loadBatch(existing) {
 // Reads all documents ONCE and then loads visually in batches
 async function initializeLotes() {
     const snap = await getDocs(collection(db, "lotes"));
-
+    const existing = {};
+    
     snap.forEach(docSnap => {
         existing[docSnap.id] = docSnap.data();
     });
