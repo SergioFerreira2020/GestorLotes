@@ -133,65 +133,56 @@ for (let i = 1; i <= 400; i++) {
    - Loads existing data into the table
 ----------------------------------------------------- */
 
-// How many lotes to load per batch
+async function initializeLotes() {
+
+    const snap = await getDocs(collection(db, "lotes"));
+
+    existingLotes = {}; // reset
+    snap.forEach(docSnap => {
+        existingLotes[docSnap.id] = docSnap.data();
+    });
+
+    await loadBatch();   // load the first batch
+    console.log("Primeira batch carregada!");
+}
+
 const BATCH_SIZE = 40;
 let currentBatch = 0;
 
-// Loads one lote by ID
-async function loadSingleLote(i, existing) {
-    const descInput = document.querySelector(`input[data-id="${i}"][data-field="description"]`);
-    const tradeInput = document.querySelector(`input[data-id="${i}"][data-field="trade"]`);
-
-    if (!descInput || !tradeInput) return;
-
-    const id = `${i}`;
-
-    if (existing[id]) {
-        // Lote exists → load data
-        descInput.value = existing[id].description ?? "";
-        tradeInput.value = existing[id].trade ?? "";
-    } else {
-        // Lote does NOT exist → create empty document
-        await setDoc(doc(db, "lotes", id), {
-            description: "",
-            trade: ""
-        });
-    }
-}
-
-// Loads a batch (40 by default)
-async function loadBatch(existing) {
+async function loadBatch() {
     const start = currentBatch * BATCH_SIZE + 1;
     const end = Math.min(start + BATCH_SIZE - 1, 400);
 
     for (let i = start; i <= end; i++) {
-        loadSingleLote(i, existing);
+        fillRow(i);
     }
 
     currentBatch++;
 }
 
-// Reads all documents ONCE and then loads visually in batches
-async function initializeLotes() {
-    const snap = await getDocs(collection(db, "lotes"));
-    snap.forEach(docSnap => {
-        existing[docSnap.id] = docSnap.data();
-    });
+function fillRow(i) {
+    const desc = document.querySelector(`input[data-id="${i}"][data-field="description"]`);
+    const trade = document.querySelector(`input[data-id="${i}"][data-field="trade"]`);
 
-    // Load first batch instantly
-    await loadBatch(existing);
+    if (!desc || !trade) return;
 
-    console.log("Primeira batch carregada!");
+    const data = existingLotes[i];
+
+    if (!data) return;
+
+    desc.value = data.description ?? "";
+    trade.value = data.trade ?? "";
 }
 
 window.addEventListener("scroll", () => {
     const bottom = window.innerHeight + window.scrollY;
-    const height = document.body.offsetHeight;
+    const fullHeight = document.body.offsetHeight;
 
-    if (bottom >= height - 300) {
-        loadBatch(existing); // load next batch
+    if (bottom >= fullHeight - 300) {
+        loadBatch(); 
     }
 });
+
 
 initializeLotes();
 
