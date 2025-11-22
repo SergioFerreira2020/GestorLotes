@@ -9,7 +9,7 @@ import {
 } from "./firebase.js";
 
 
-let existing = {};
+const existing = {};
 const tbody = document.getElementById("itemsBody");
 
 // === MASTER SIZE REGEX (handles almost everything) ===
