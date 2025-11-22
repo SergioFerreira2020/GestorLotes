@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Firebase (must load first!) -->
+    <script type="module" src="firebase.js"></script>
+
+    <!-- Modal system -->
+    <script type="module" src="modal.js"></script>
+
+    <!-- Clients logic -->
+    <script type="module" src="clients.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Clientes</h1>
+        <nav>
+            <a href="clients.html">Clientes</a>
+            <a href="lotes.html">Lotes</a>
+            <a href="assign.html">Atribuir Lotes</a>
+            <a href="clients-delivery.html">Entregas</a>
+            <a href="history.html">Histórico</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card">
+            <h2>Adicionar Cliente</h2>
+
+            <form id="clientForm">
+                <input type="text" placeholder="Nome" required>
+
+                <input type="text" placeholder="Contacto" maxlength="9" required>
+
+                <input type="text" placeholder="Morada" required>
+
+                <textarea placeholder="Notas adicionais"></textarea>
+
+                <button>Guardar</button>
+            </form>
+
+            <!-- TABLE OF CLIENTS -->
+            <hr style="margin:25px 0; border-color:#333;">
+
+            <h2>Lista de Clientes</h2>
+
+            <table id="clientsTable">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Contacto</th>
+                        <th>Morada</th>
+                        <th>Notas</th>
+                        <th></th> 
+                    </tr>
+                </thead>
+
+                <tbody id="clientsBody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- GLOBAL MODAL -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 id="modalTitle">Título</h3>
+
+            <div id="modalContent" class="modal-box"></div>
+
+            <div id="modalButtons" style="margin-top: 15px; text-align: right;">
+                <button id="modalClose" class="modal-btn-cancel">Fechar</button>
+                <button id="modalCancel" class="modal-btn-cancel hidden">Cancelar</button>
+                <button id="modalConfirm" class="modal-btn-ok hidden">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

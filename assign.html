@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atribuir Lotes</title>
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="assign.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<header>
+    <h1>Atribuir Lotes</h1>
+    <nav>
+        <a href="clients.html">Clientes</a>
+        <a href="lotes.html">Lotes</a>
+        <a href="assign.html">Atribuir Lotes</a>
+        <a href="clients-delivery.html">Entregas</a>
+        <a href="history.html">Histórico</a>
+    </nav>
+</header>
+
+<main>
+    <div class="card">
+
+        <h2>Associar Lote a Cliente</h2>
+
+        <form id="assignForm">
+            <select id="clientSelect" required>
+                <option value="">Selecionar cliente...</option>
+            </select>
+
+            <select id="loteSelect" required>
+                <option value="">Selecionar lote...</option>
+            </select>
+
+            <button>Atribuir Lote</button>
+        </form>
+
+        <hr style="margin:25px 0; border-color:#333;">
+
+        <h2>Finalizar Entrega</h2>
+        <p>Depois de entregar fisicamente o lote ao cliente, confirma abaixo:</p>
+
+        <form id="deliverForm">
+            <select id="assignedSelect" required>
+                <option value="">Selecionar lote atribuído...</option>
+            </select>
+
+            <button>Confirmar Entrega</button>
+        </form>
+
+    </div>
+</main>
+
+<script>
+    // Nesta fase ainda não há Firebase integrado.
+    // A lógica vai ser implementada numa fase seguinte.
+</script>
+
+</body>
+</html>

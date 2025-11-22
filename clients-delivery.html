@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotes Pendentes</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="clients-delivery.js"></script>
+    <script type="module" src="modal.js"></script>
+</head>
+
+<body>
+
+<header>
+    <h1>Lotes por Entregar</h1>
+    <nav>
+        <a href="clients.html">Clientes</a>
+        <a href="lotes.html">Lotes</a>
+        <a href="assign.html">Atribuir Lotes</a>
+        <a href="clients-delivery.html">Entregas</a>
+        <a href="history.html">Histórico</a>
+    </nav>
+</header>
+
+<main>
+    <div class="card">
+        <h2>Clientes com Lotes Pendentes</h2>
+
+        <input 
+            id="searchInput" 
+            type="text" 
+            placeholder="Pesquisar por cliente, contacto ou lote..."
+        >
+
+        <div id="clientList"></div>
+    </div>
+</main>
+
+<!-- INFO MODAL (already existed) -->
+<div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal">
+        <h3 id="modalTitle">Cliente</h3>
+
+        <div id="modalContent"></div>
+
+        <div id="modalButtons" style="margin-top: 15px; text-align: right;">
+            <button id="modalClose" class="modal-btn-cancel">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ NEW: CONFIRMATION MODAL (required by openConfirmModal) -->
+<div id="confirmOverlay" class="modal-overlay hidden">
+    <div class="modal">
+        <h3 id="confirmTitle">Confirmar</h3>
+
+        <div id="confirmMessage"></div>
+
+        <div class="modal-buttons" style="margin-top: 15px; text-align: right;">
+            <button id="confirmCancel" class="modal-btn-cancel">Cancelar</button>
+            <button id="confirmOk" class="modal-btn-ok">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
