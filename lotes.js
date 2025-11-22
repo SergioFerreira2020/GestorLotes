@@ -174,7 +174,6 @@ async function loadBatch(existing) {
 async function initializeLotes() {
     const snap = await getDocs(collection(db, "lotes"));
     const existing = {};
-    
     snap.forEach(docSnap => {
         existing[docSnap.id] = docSnap.data();
     });
