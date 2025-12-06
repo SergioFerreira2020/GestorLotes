@@ -4,6 +4,10 @@ import { openInfoModal } from "./modal.js";
 
 const LOW_STOCK_LIMIT = 4;
 
+/* -------------------------------
+   TRANSLATION MAPS
+--------------------------------*/
+
 // Gender → Portuguese
 const genderMap = {
     F: "senhora",
@@ -14,14 +18,31 @@ const genderMap = {
     UNISEX: "unissexo"
 };
 
-// Type → Portuguese
-const typeMap = {
-    clothes: "roupa",
-    shoes: "calçado",
+// Age type → Portuguese
+const ageTypeMap = {
     baby: "bebé",
-    child: "criança"
+    child: "criança",
+    clothes: "adulto",
+    shoes: "calçado"
 };
 
+// Category → Portuguese
+const categoryMap = {
+    sweater: "camisola",
+    jacket: "casaco",
+    trousers: "calças",
+    tshirt: "t-shirt",
+    dress: "vestido",
+    skirt: "saia",
+    babygrow: "babygrow",
+    socks: "meias",
+    shoes: "calçado",
+    clothes: "roupa"
+};
+
+/* -------------------------------
+   MAIN CHECKER
+--------------------------------*/
 async function checkLowStock() {
     const snap = await getDocs(collection(db, "sizes"));
 
@@ -33,15 +54,11 @@ async function checkLowStock() {
 
         if (count > LOW_STOCK_LIMIT) return;
 
-        const key = docSnap.id;      // e.g. "BOY-4 MESES"
-        const gender = data.gender;  // stored directly now
-        const size = data.size;      // cleaner than splitting id
-        const type = data.type || "clothes";
-
         alerts.push({
-            gender,
-            size,
-            type,
+            gender: data.gender,
+            size: data.size,
+            ageType: data.ageType || "clothes",
+            category: data.category || "clothes",
             count
         });
     });
@@ -53,17 +70,19 @@ async function checkLowStock() {
     for (const item of alerts) {
 
         const genderName = genderMap[item.gender] || item.gender.toLowerCase();
-        const typeName = typeMap[item.type] || "roupa";
+        const ageName = ageTypeMap[item.ageType] || "adulto";
+        const categoryName = categoryMap[item.category] || "roupa";
         const sizeLabel = item.size;
 
         html += `
             <div class="modal-box">
-                <strong>${genderName} — ${typeName} — ${sizeLabel}</strong>: ${item.count} em stock
+                <strong>${genderName} — ${categoryName} (${ageName}) — ${sizeLabel}</strong>:
+                ${item.count} em stock
             </div>
         `;
     }
 
-    openInfoModal("Stock baixo", html);
+    openInfoModal("Tamanhos com stock baixo", html);
 }
 
 checkLowStock();
