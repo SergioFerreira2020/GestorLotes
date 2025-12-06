@@ -1,35 +1,63 @@
 // assign.js
-import { db, collection, getDocs, doc, updateDoc, getDoc, setDoc, deleteDoc } from "./firebase.js";
+import {
+    db,
+    collection,
+    getDocs,
+    doc,
+    updateDoc,
+    getDoc,
+    setDoc,
+    deleteDoc
+} from "./firebase.js";
 
+/* ---------------------------------------------------
+   DOM elements
+--------------------------------------------------- */
 const clientSelect = document.getElementById("clientSelect");
 const loteSelect = document.getElementById("loteSelect");
 const assignedSelect = document.getElementById("assignedSelect");
 
 /* ---------------------------------------------------
-   UNIFIED SIZE + GENDER PARSER
-   (matches lotes.js exactly)
+   UNIFIED SIZE REGEX (same as lotes.js)
 --------------------------------------------------- */
-// MASTER SIZE REGEX (handles most formats)
 const SIZE_REGEX = new RegExp(
-    "\\b(XXS|XS|S|M|L|XL|XXL|XXXL)\\b" + // letter sizes
-    "|" +
-    "\\b(\\d{1,2}\\s*[-/]\\s*\\d{1,2}\\s*(m|meses|mês|mes))\\b" + // 4-8 meses / 4/8m
-    "|" +
-    "\\b(\\d{1,2}\\s*(m|meses|mês|mes))\\b" + // 6 meses / 6m
-    "|" +
-    "\\b(\\d{1,2}\\s*[-/]\\s*\\d{1,2}\\s*(anos|a|y))\\b" + // 6-8 anos
-    "|" +
-    "\\b(\\d{1,2}\\s*(anos|a|y))\\b" + // 10 anos / 10y
-    "|" +
-    "\\b(3[4-9]|4[0-9]|5[0-6])\\b" + // adult numeric sizes 34–56
-    "|" +
-    "\\b(1[6-9]|2[0-9]|3[0-9]|4[0-6])\\b" + // shoe sizes 16–46
-    "|" +
-    "\\b(tam(anho)?\\.?)\\s*(\\d{1,2}|XXS|XS|S|M|L|XL|XXL|XXXL)\\b", // TAM / TAMANHO
+    [
+        // TAM / TAMANHO
+        "\\b(?:tam(?:anho)?\\.?)[\\s:ºnº]*\\s*(?:\\d{1,2}|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
+
+        // CM RANGE
+        "\\b\\d{1,3}\\s*(?:[-/]|a)\\s*\\d{1,3}\\s*cm\\b",
+
+        // CM SINGLE
+        "\\b\\d{1,3}\\s*cm\\b",
+
+        // LETTER SIZES
+        "\\b(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
+
+        // MONTH RANGE
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // MONTH SINGLE
+        "\\b\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // YEAR RANGE
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // YEAR SINGLE
+        "\\b\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // ADULT NUMERIC (30–56)
+        "\\b(?:3[0-9]|4[0-9]|5[0-6])\\b",
+
+        // SHOES (10–59)
+        "\\b(?:1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])\\b"
+    ].join("|"),
     "i"
 );
 
-// Gender detector
+/* ---------------------------------------------------
+   Gender detection
+--------------------------------------------------- */
 function extractGender(desc) {
     desc = desc.toLowerCase();
 
@@ -42,65 +70,65 @@ function extractGender(desc) {
     return "UNISEX";
 }
 
-// Full extractor: size + gender + normalization
+/* ---------------------------------------------------
+   Size + Gender + Type extractor
+--------------------------------------------------- */
 function extractSizeAndGender(description) {
     if (!description) return null;
 
     const text = description.toLowerCase();
-
     const match = text.match(SIZE_REGEX);
     if (!match) return null;
 
     let size = match[0].toUpperCase();
 
-    // Normalize month ranges (4-8m → 4-8 MESES, 4/8m → 4-8 MESES)
-    size = size.replace(
-        /\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1-$2 MESES"
-    );
-
-    // Normalize single months (6m → 6 MESES)
-    size = size.replace(
-        /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1 MESES"
-    );
-
-    // Normalize year ranges (6-8a / 6-8y → 6-8 ANOS)
-    size = size.replace(
-        /\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1-$2 ANOS"
-    );
-
-    // Normalize single years (10a / 10y → 10 ANOS)
-    size = size.replace(
-        /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1 ANOS"
-    );
+    // Normalization
+    size = size
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i, "$1-$2 MESES")
+        .replace(/\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i, "$1 MESES")
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i, "$1-$2 ANOS")
+        .replace(/\b(\d{1,2})\s*(ANOS|A|Y)\b/i, "$1 ANOS");
 
     const gender = extractGender(text);
 
-    return { size: size.trim(), gender };
+    /* TYPE DETECTION */
+    let type = "clothes";
+
+    if (/(sapato|sapatilha|ténis|tenis|botas|chinelos)/i.test(text)) {
+        type = "shoes";
+    } else if (/MESES/.test(size)) {
+        type = "baby";
+    } else if (/ANOS/.test(size)) {
+        type = "child";
+    } else if (/CM/.test(size)) {
+        type = "cm";
+    } else {
+        // Default numeric sizes → assume clothes unless it's clearly shoe-sized
+        const num = parseInt(size);
+        if (num >= 10 && num <= 59) {
+            type = "shoes";
+        }
+    }
+
+    return { size: size.trim(), gender, type };
 }
 
-
 /* ---------------------------------------------------
-   FIRESTORE STOCK OPERATIONS
+   Stock operations using TYPE-GENDER-SIZE
 --------------------------------------------------- */
-async function decreaseSizeStock(gender, size) {
-    const key = `${gender}-${size}`;
+async function decreaseSizeStock(gender, size, type) {
+    const key = `${type}-${gender}-${size}`;
     const ref = doc(db, "sizes", key);
 
     const snap = await getDoc(ref);
-    if (!snap.exists()) return; // nothing to decrease
+    if (!snap.exists()) return;
 
     const current = snap.data().count || 0;
-    const newValue = Math.max(0, current - 1);
-
-    await updateDoc(ref, { count: newValue });
+    await updateDoc(ref, { count: Math.max(0, current - 1) });
 }
 
 /* ---------------------------------------------------
-   1. Load Clients into dropdown
+   1. Load Clients
 --------------------------------------------------- */
 async function loadClients() {
     const snap = await getDocs(collection(db, "clients"));
@@ -111,7 +139,6 @@ async function loadClients() {
         const opt = document.createElement("option");
         opt.value = docSnap.id;
         opt.textContent = `${data.name} (${data.contact})`;
-
         clientSelect.appendChild(opt);
     });
 }
@@ -127,22 +154,19 @@ async function loadLotes() {
         const id = docSnap.id;
         const description = (data.description || "").trim();
 
-        // Free lots (not assigned + has description)
-        if (description !== "" && !data.assignedTo) {
+        // Free lots
+        if (description && !data.assignedTo) {
             const opt = document.createElement("option");
             opt.value = id;
-            opt.textContent = `${id} — ${description}`;
+            opt.textContent = `Lote ${id} — ${description}`;
             loteSelect.appendChild(opt);
         }
 
-        // Assigned but not delivered yet
+        // Assigned lots
         if (data.assignedTo && !data.delivered) {
             const opt2 = document.createElement("option");
             opt2.value = id;
-
-            // FIXED: show the actual lote description
-            opt2.textContent = `lote ${id} — ${description}`;
-
+            opt2.textContent = `Lote ${id} — ${description}`;
             assignedSelect.appendChild(opt2);
         }
     });
@@ -154,7 +178,7 @@ loadClients();
 loadLotes();
 
 /* ---------------------------------------------------
-   3. Assign lote to a client
+   3. Assign lote to client
 --------------------------------------------------- */
 document.getElementById("assignForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -202,10 +226,10 @@ document.getElementById("deliverForm").addEventListener("submit", async (e) => {
     const data = snap.data();
 
     try {
-        // 1️⃣ Extract size BEFORE deleting
+        // Extract size for stock correction
         const info = extractSizeAndGender(data.description || "");
         if (info) {
-            await decreaseSizeStock(info.gender, info.size);
+            await decreaseSizeStock(info.gender, info.size, info.type);
         }
 
         // 2️⃣ Save to history
@@ -218,7 +242,7 @@ document.getElementById("deliverForm").addEventListener("submit", async (e) => {
             deliveredAt: new Date()
         });
 
-        // 3️⃣ Delete lote instead of clearing it
+        // Delete lote (no empty rows anymore)
         await deleteDoc(loteRef);
 
         alert("Entrega confirmada! Stock atualizado e lote movido para o histórico.");
@@ -229,4 +253,3 @@ document.getElementById("deliverForm").addEventListener("submit", async (e) => {
         alert("Erro ao confirmar entrega.");
     }
 });
-

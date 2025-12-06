@@ -12,32 +12,47 @@ import {
 
 import { openInfoModal, openConfirmModal } from "./modal.js";
 
-
 /* ---------------------------------------------------
-   UNIFIED SIZE + GENDER PARSER
-   (matches lotes.js exactly)
+   UNIFIED SIZE REGEX (matches lotes.js + assign.js)
 --------------------------------------------------- */
-// MASTER SIZE REGEX (handles most formats)
 const SIZE_REGEX = new RegExp(
-    "\\b(XXS|XS|S|M|L|XL|XXL|XXXL)\\b" + // letter sizes
-    "|" +
-    "\\b(\\d{1,2}\\s*[-/]\\s*\\d{1,2}\\s*(m|meses|mês|mes))\\b" + // 4-8 meses / 4/8m
-    "|" +
-    "\\b(\\d{1,2}\\s*(m|meses|mês|mes))\\b" + // 6 meses / 6m
-    "|" +
-    "\\b(\\d{1,2}\\s*[-/]\\s*\\d{1,2}\\s*(anos|a|y))\\b" + // 6-8 anos
-    "|" +
-    "\\b(\\d{1,2}\\s*(anos|a|y))\\b" + // 10 anos / 10y
-    "|" +
-    "\\b(3[4-9]|4[0-9]|5[0-6])\\b" + // adult numeric sizes 34–56
-    "|" +
-    "\\b(1[6-9]|2[0-9]|3[0-9]|4[0-6])\\b" + // shoe sizes 16–46
-    "|" +
-    "\\b(tam(anho)?\\.?)\\s*(\\d{1,2}|XXS|XS|S|M|L|XL|XXL|XXXL)\\b", // TAM / TAMANHO
+    [
+        // TAM / TAMANHO formats
+        "\\b(?:tam(?:anho)?\\.?)[\\s:ºnº]*\\s*(?:\\d{1,2}|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
+
+        // CM RANGE
+        "\\b\\d{1,3}\\s*(?:[-/]|a)\\s*\\d{1,3}\\s*cm\\b",
+
+        // CM SINGLE
+        "\\b\\d{1,3}\\s*cm\\b",
+
+        // LETTER SIZES
+        "\\b(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
+
+        // MONTH RANGE
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // MONTH SINGLE
+        "\\b\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // YEAR RANGE
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // YEAR SINGLE
+        "\\b\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // ADULT NUMERIC (30–56)
+        "\\b(?:3[0-9]|4[0-9]|5[0-6])\\b",
+
+        // SHOES (10–59)
+        "\\b(?:1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])\\b"
+    ].join("|"),
     "i"
 );
 
-// Gender detector
+/* ---------------------------------------------------
+   Gender detector
+--------------------------------------------------- */
 function extractGender(desc) {
     desc = desc.toLowerCase();
 
@@ -50,73 +65,70 @@ function extractGender(desc) {
     return "UNISEX";
 }
 
-// Full extractor: size + gender + normalization
+/* ---------------------------------------------------
+   FULL EXTRACTOR (size, gender, type)
+--------------------------------------------------- */
 function extractSizeAndGender(description) {
     if (!description) return null;
 
     const text = description.toLowerCase();
-
     const match = text.match(SIZE_REGEX);
     if (!match) return null;
 
     let size = match[0].toUpperCase();
 
-    // Normalize month ranges (4-8m → 4-8 MESES, 4/8m → 4-8 MESES)
-    size = size.replace(
-        /\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1-$2 MESES"
-    );
-
-    // Normalize single months (6m → 6 MESES)
-    size = size.replace(
-        /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1 MESES"
-    );
-
-    // Normalize year ranges (6-8a / 6-8y → 6-8 ANOS)
-    size = size.replace(
-        /\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1-$2 ANOS"
-    );
-
-    // Normalize single years (10a / 10y → 10 ANOS)
-    size = size.replace(
-        /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1 ANOS"
-    );
+    // Normalization
+    size = size
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i, "$1-$2 MESES")
+        .replace(/\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i, "$1 MESES")
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i, "$1-$2 ANOS")
+        .replace(/\b(\d{1,2})\s*(ANOS|A|Y)\b/i, "$1 ANOS");
 
     const gender = extractGender(text);
 
-    return { size: size.trim(), gender };
+    // TYPE detection
+    let type = "clothes";
+
+    if (/(sapato|sapatilha|ténis|tenis|botas|chinelos)/i.test(text))
+        type = "shoes";
+    else if (/MESES/.test(size))
+        type = "baby";
+    else if (/ANOS/.test(size))
+        type = "child";
+    else if (/CM/.test(size))
+        type = "cm";
+    else {
+        const num = parseInt(size);
+        if (!isNaN(num) && num >= 10 && num <= 59) type = "shoes";
+    }
+
+    return { size: size.trim(), gender, type };
 }
 
-
-// ===========================================
-// 🔽 Decrease stock
-// ===========================================
-async function decreaseSizeStock(g, s) {
-    const key = `${g}-${s}`;
+/* ---------------------------------------------------
+   STOCK: Decrease TYPE–GENDER–SIZE
+--------------------------------------------------- */
+async function decreaseSizeStock(gender, size, type) {
+    const key = `${type}-${gender}-${size}`;
     const ref = doc(db, "sizes", key);
-    const snap = await getDoc(ref);
 
+    const snap = await getDoc(ref);
     if (!snap.exists()) return;
 
     const current = snap.data().count || 0;
-    const newVal = Math.max(0, current - 1);
-
-    await updateDoc(ref, { count: newVal });
+    await updateDoc(ref, { count: Math.max(0, current - 1) });
 }
 
-// ===========================================
-// 📥 Load ALL CLIENTS + THEIR PENDING LOTES
-// ===========================================
+/* ---------------------------------------------------
+   LOAD pending lots grouped by clients
+--------------------------------------------------- */
 async function loadPendingDeliveries() {
     const clientList = document.getElementById("clientList");
     clientList.innerHTML = "";
 
-    // Fetch clients
     const clientSnap = await getDocs(collection(db, "clients"));
     const clients = {};
+
     clientSnap.forEach(c => {
         clients[c.id] = {
             name: c.data().name,
@@ -125,7 +137,6 @@ async function loadPendingDeliveries() {
         };
     });
 
-    // Fetch lotes
     const lotesSnap = await getDocs(collection(db, "lotes"));
 
     lotesSnap.forEach(l => {
@@ -133,23 +144,19 @@ async function loadPendingDeliveries() {
         const id = l.id;
 
         if (data.assignedTo && !data.delivered) {
-            const clientId = data.assignedTo;
-
-            if (clients[clientId]) {
-                clients[clientId].lotes.push({
-                    id,
-                    description: data.description || ""
-                });
-            }
+            clients[data.assignedTo]?.lotes.push({
+                id,
+                description: data.description || ""
+            });
         }
     });
 
     renderClientCards(clients);
 }
 
-// ===========================================
-// 🖼 Render Cards on the Page
-// ===========================================
+/* ---------------------------------------------------
+   Render client cards
+--------------------------------------------------- */
 function renderClientCards(clients) {
     const wrapper = document.getElementById("clientList");
     wrapper.innerHTML = "";
@@ -166,7 +173,7 @@ function renderClientCards(clients) {
         div.style.padding = "20px";
 
         div.innerHTML = `
-            <div>
+            <div style="cursor:pointer">
                 <strong>${c.name}</strong> — <span style="color:#bbb">${c.phone}</span><br>
                 ${c.lotes.length} lote(s) por entregar
             </div>
@@ -176,21 +183,18 @@ function renderClientCards(clients) {
             </button>
         `;
 
-        // Open modal on left area click
-        div.children[0].style.cursor = "pointer";
         div.children[0].addEventListener("click", () => showClientModal(c));
-
-        // Deliver button
-        div.querySelector(".deliverAllBtn")
-            .addEventListener("click", () => confirmDeliverAll(cid, c));
+        div.querySelector(".deliverAllBtn").addEventListener("click", () =>
+            confirmDeliverAll(cid, c)
+        );
 
         wrapper.appendChild(div);
     }
 }
 
-// ===========================================
-// 🔎 Search Bar Filtering
-// ===========================================
+/* ---------------------------------------------------
+   Search bar filter
+--------------------------------------------------- */
 document.getElementById("searchInput").addEventListener("input", (e) => {
     const text = e.target.value.toLowerCase();
     const cards = document.querySelectorAll("#clientList .card");
@@ -201,29 +205,27 @@ document.getElementById("searchInput").addEventListener("input", (e) => {
     });
 });
 
-// ===========================================
-// 📦 Modal with Client Lotes
-// ===========================================
+/* ---------------------------------------------------
+   Modal with lotes for that client
+--------------------------------------------------- */
 function showClientModal(client) {
-    const modal = document.getElementById("modalOverlay");
     document.getElementById("modalTitle").textContent =
         `${client.name} (${client.phone})`;
 
-    let html = "";
-    client.lotes.forEach(l => {
-        html += `<div class="modal-box"> Lote ${l.id} — ${l.description}</div>`;
-    });
+    document.getElementById("modalContent").innerHTML =
+        client.lotes
+            .map(l => `<div class="modal-box">Lote ${l.id} — ${l.description}</div>`)
+            .join("");
 
-    document.getElementById("modalContent").innerHTML = html;
-    modal.classList.remove("hidden");
+    document.getElementById("modalOverlay").classList.remove("hidden");
 }
 
 document.getElementById("modalClose").onclick = () =>
     document.getElementById("modalOverlay").classList.add("hidden");
 
-// ===========================================
-// 🚚 Deliver ALL lots for the client
-// ===========================================
+/* ---------------------------------------------------
+   Confirm "Deliver ALL" modal
+--------------------------------------------------- */
 async function confirmDeliverAll(clientId, client) {
     openConfirmModal(
         "Confirmar Entrega?",
@@ -232,25 +234,27 @@ async function confirmDeliverAll(clientId, client) {
         </div>`,
         () => actuallyDeliverAll(clientId, client)
     );
-
 }
 
+/* ---------------------------------------------------
+   Deliver all lots from that client
+--------------------------------------------------- */
 async function actuallyDeliverAll(clientId, client) {
-    for (const lote of client.lotes) {
 
+    for (const lote of client.lotes) {
         const loteRef = doc(db, "lotes", lote.id);
         const snap = await getDoc(loteRef);
         if (!snap.exists()) continue;
 
         const data = snap.data();
 
-        // 🔽 DECREASE STOCK BASED ON DESCRIPTION
+        // Extract size for stock update
         const info = extractSizeAndGender(data.description || "");
         if (info) {
-            await decreaseSizeStock(info.gender, info.size);
+            await decreaseSizeStock(info.gender, info.size, info.type);
         }
 
-        // 📘 Save to HISTORY
+        // Move to history
         const historyRef = doc(collection(db, "history"));
         await setDoc(historyRef, {
             lote: lote.id,
@@ -260,7 +264,7 @@ async function actuallyDeliverAll(clientId, client) {
             deliveredAt: new Date()
         });
 
-        // 🗑️ DELETE the lote (instead of clearing it)
+        // DELETE the lote (new logic)
         await deleteDoc(loteRef);
     }
 
@@ -268,9 +272,7 @@ async function actuallyDeliverAll(clientId, client) {
     loadPendingDeliveries();
 }
 
-
-
-// ===========================================
-// INIT
-// ===========================================
+/* ---------------------------------------------------
+   INIT
+--------------------------------------------------- */
 loadPendingDeliveries();
