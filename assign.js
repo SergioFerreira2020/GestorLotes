@@ -1,5 +1,5 @@
 // assign.js
-import { db, collection, getDocs, doc, updateDoc, getDoc, setDoc } from "./firebase.js";
+import { db, collection, getDocs, doc, updateDoc, getDoc, setDoc, deleteDoc } from "./firebase.js";
 
 const clientSelect = document.getElementById("clientSelect");
 const loteSelect = document.getElementById("loteSelect");

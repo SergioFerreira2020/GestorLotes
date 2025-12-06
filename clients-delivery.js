@@ -6,7 +6,8 @@ import {
     getDoc,
     doc,
     updateDoc,
-    setDoc 
+    setDoc,
+    deleteDoc
 } from "./firebase.js";
 
 import { openInfoModal, openConfirmModal } from "./modal.js";
