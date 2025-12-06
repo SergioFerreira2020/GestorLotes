@@ -16,121 +16,132 @@ const tbody = document.getElementById("itemsBody");
 const MAX_LOTES = 400;
 
 /* -----------------------------------------------------
-   SIZE + GENDER DETECTION (shared logic)
+   SIZE + GENDER + AGE TYPE + CATEGORY SYSTEM (FINAL)
 ----------------------------------------------------- */
 
-// MASTER SIZE REGEX (order matters!)
 const SIZE_REGEX = new RegExp(
     [
-        // 1) MONTH RANGE FIRST (2 a 4 meses, 2-4m, 2/4m)
-        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
-
-        // 2) SINGLE MONTHS (6m, 6 meses)
-        "\\b\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
-
-        // 3) YEAR RANGE (2 a 4 anos, 2-4a, 2/4a)
-        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:anos|a|y)\\b",
-
-        // 4) SINGLE YEAR (10 anos, 10a, 10y)
-        "\\b\\d{1,2}\\s*(?:anos|a|y)\\b",
-
-        // 5) CM RANGE  (50-56 cm, 50/56cm, 50 a 56 cm)
-        "\\b\\d{1,3}\\s*(?:[-/]|a)\\s*\\d{1,3}\\s*cm\\b",
-
-        // 6) CM SINGLE (50cm)
-        "\\b\\d{1,3}\\s*cm\\b",
-
-        // 7) TAM / TAMANHO formats (must come before plain letters)
+        // TAM / TAMANHO
         "\\b(?:tam(?:anho)?\\.?)[\\s:ºnº]*\\s*(?:\\d{1,2}|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
 
-        // 8) LETTER SIZES (standalone only, not inside words)
+        // MONTH RANGE MUST BE FIRST BEFORE NUMERIC MATCHES
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // SINGLE MONTH
+        "\\b\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
+
+        // YEAR RANGE
+        "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // SINGLE YEAR
+        "\\b\\d{1,2}\\s*(?:anos|a|y)\\b",
+
+        // CM RANGE
+        "\\b\\d{1,3}\\s*(?:[-/]|a)\\s*\\d{1,3}\\s*cm\\b",
+
+        // CM SINGLE
+        "\\b\\d{1,3}\\s*cm\\b",
+
+        // LETTER SIZES
         "\\b(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
 
-        // 9) ADULT NUMERIC CLOTHES (30–56)
-        "\\b(?:3[0-9]|4[0-9]|5[0-6])\\b",
-
-        // 10) SHOES (10–59)
+        // NUMERIC (shoes or adult)
         "\\b(?:1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])\\b"
     ].join("|"),
     "i"
 );
 
-// Gender detector
+/* ---------------- GENDER ---------------- */
 function extractGender(desc) {
     desc = desc.toLowerCase();
 
     if (/senhora|mulher|feminino|\bf\b/.test(desc)) return "F";
     if (/senhor|homem|masculino|\bm\b/.test(desc)) return "M";
+
     if (/menina|rapariga/.test(desc)) return "GIRL";
     if (/menino|rapaz/.test(desc)) return "BOY";
+
     if (/bebé|bebe|baby|infantil/.test(desc)) return "BABY";
 
     return "UNISEX";
 }
 
-// Full extractor: size + gender + type (clothes/shoes/baby/child)
+/* ---------------- CATEGORY ---------------- */
+function extractCategory(text) {
+    if (/camisola|suéter|sweater|pulôver/i.test(text)) return "sweater";
+    if (/casaco|blusão|agasalho/i.test(text)) return "jacket";
+    if (/calça|pants|trousers/i.test(text)) return "trousers";
+    if (/t[- ]?shirt|camiseta/i.test(text)) return "tshirt";
+    if (/vestido/i.test(text)) return "dress";
+    if (/saia/i.test(text)) return "skirt";
+    if (/body|babygrow/i.test(text)) return "babygrow";
+    if (/meias|socks/i.test(text)) return "socks";
+
+    // shoes
+    if (/sapato|sapatilha|ténis|tenis|bota|sandália/i.test(text)) return "shoes";
+
+    return "clothes"; // fallback
+}
+
+/* ---------------- SIZE + TYPE EXTRACTION ---------------- */
 function extractSizeAndGender(description) {
     if (!description) return null;
 
     const text = description.toLowerCase();
     const match = text.match(SIZE_REGEX);
+
     if (!match) return null;
 
     let size = match[0].toUpperCase();
 
-    // Normalization: Months (ranges + single)
-    size = size
-        .replace(
-            /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-            "$1-$2 MESES"
-        )
-        .replace(
-            /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-            "$1 MESES"
-        );
+    // Normalize month ranges
+    size = size.replace(
+        /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+        "$1-$2 MESES"
+    ).replace(
+        /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+        "$1 MESES"
+    );
 
-    // Normalization: Years (ranges + single)
-    size = size
-        .replace(
-            /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
-            "$1-$2 ANOS"
-        )
-        .replace(
-            /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
-            "$1 ANOS"
-        );
+    // Normalize years
+    size = size.replace(
+        /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
+        "$1-$2 ANOS"
+    ).replace(
+        /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
+        "$1 ANOS"
+    );
 
     const gender = extractGender(text);
+    const category = extractCategory(text);
 
-    // --- TYPE DETECTION ---
-    let type = "clothes";
+    // Age type detection
+    let ageType = "clothes";
 
-    if (/(sapato|sapatilha|ténis|tenis|bota|chinel)/i.test(text)) {
-        type = "shoes";
-    } else if (/MESES/.test(size)) {
-        type = "baby";
-    } else if (/ANOS/.test(size)) {
-        type = "child";
-    } else if (/CM/.test(size)) {
-        type = "baby";  // cm usually for babies
-    } else {
-        // numeric sizes → detect shoes vs clothes
-        const firstToken = size.split(/[- ]/)[0];
-        const num = parseInt(firstToken, 10);
-        if (!isNaN(num) && num >= 16 && num <= 59) {
-            type = "shoes";
-        }
+    if (/MESES/.test(size)) ageType = "baby";
+    else if (/ANOS/.test(size)) ageType = "child";
+    else if (/CM/.test(size)) ageType = "baby";
+    else {
+        const n = parseInt(size);
+        if (!isNaN(n) && n >= 16 && n <= 59) ageType = "shoes";
     }
 
-    return { size: size.trim(), gender, type };
+    return {
+        size: size.trim(),
+        gender,
+        ageType,
+        category
+    };
 }
+
+
 
 /* -----------------------------------------------------
    SIZE STOCK OPERATIONS
 ----------------------------------------------------- */
 
 // Increase size stock
-async function increaseSizeStock(gender, size, type) {
+async function increaseSizeStock(gender, size, meta) {
     const key = `${gender}-${size}`;
     const ref = doc(db, "sizes", key);
     const snap = await getDoc(ref);
@@ -139,7 +150,8 @@ async function increaseSizeStock(gender, size, type) {
         await setDoc(ref, {
             gender,
             size,
-            type,
+            ageType: meta.ageType,
+            category: meta.category,
             count: 1
         });
     } else {
@@ -149,6 +161,7 @@ async function increaseSizeStock(gender, size, type) {
     }
 }
 
+
 // Decrease size stock
 async function decreaseSizeStock(gender, size) {
     const key = `${gender}-${size}`;
@@ -157,11 +170,13 @@ async function decreaseSizeStock(gender, size) {
 
     if (!snap.exists()) return;
 
-    const current = snap.data().count || 0;
+    const data = snap.data();
+    const current = data.count || 0;
     const newVal = Math.max(0, current - 1);
 
     await updateDoc(ref, { count: newVal });
 }
+
 
 /* -----------------------------------------------------
    1. Generate 1..MAX_LOTES rows in the table
@@ -263,12 +278,20 @@ async function saveLote(input) {
             // 2) Changed description (size and/or gender changed)
             if (oldSize && newSize && (oldSize !== newSize || oldGender !== newGender)) {
                 await decreaseSizeStock(oldGender, oldSize);
-                await increaseSizeStock(newGender, newSize, newInfo.type);
+                await increaseSizeStock(newGender, newSize, {
+                    ageType: newInfo.ageType,
+                    category: newInfo.category
+                });
+
             }
 
             // 3) Added a size where there was none
             if (!oldSize && newSize) {
-                await increaseSizeStock(newGender, newSize, newInfo.type);
+                await increaseSizeStock(newGender, newSize, {
+                    ageType: newInfo.ageType,
+                    category: newInfo.category
+                });
+
             }
         }
 

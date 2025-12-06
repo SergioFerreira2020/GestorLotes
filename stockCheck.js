@@ -4,6 +4,7 @@ import { openInfoModal } from "./modal.js";
 
 const LOW_STOCK_LIMIT = 4;
 
+// Gender → Portuguese
 const genderMap = {
     F: "senhora",
     M: "senhor",
@@ -13,13 +14,12 @@ const genderMap = {
     UNISEX: "unissexo"
 };
 
+// Type → Portuguese
 const typeMap = {
-    baby: "bebé",
-    child: "criança",
     clothes: "roupa",
     shoes: "calçado",
-    cm: "centímetros",
-    other: "outros"
+    baby: "bebé",
+    child: "criança"
 };
 
 async function checkLowStock() {
@@ -28,37 +28,42 @@ async function checkLowStock() {
     let alerts = [];
 
     snap.forEach(docSnap => {
-        const count = docSnap.data().count;
+        const data = docSnap.data();
+        const count = data.count || 0;
 
-        if (count <= LOW_STOCK_LIMIT) {
-            alerts.push({
-                key: docSnap.id,
-                count
-            });
-        }
+        if (count > LOW_STOCK_LIMIT) return;
+
+        const key = docSnap.id;      // e.g. "BOY-4 MESES"
+        const gender = data.gender;  // stored directly now
+        const size = data.size;      // cleaner than splitting id
+        const type = data.type || "clothes";
+
+        alerts.push({
+            gender,
+            size,
+            type,
+            count
+        });
     });
 
     if (alerts.length === 0) return;
 
     let html = "";
 
-    for (const alert of alerts) {
-        const parts = alert.key.split("-");
-        const type = parts[0];
-        const genderCode = parts[1];
-        const size = parts.slice(2).join("-");
+    for (const item of alerts) {
 
-        const genderName = genderMap[genderCode] || genderCode.toLowerCase();
-        const typeName = typeMap[type] || type;
+        const genderName = genderMap[item.gender] || item.gender.toLowerCase();
+        const typeName = typeMap[item.type] || "roupa";
+        const sizeLabel = item.size;
 
         html += `
             <div class="modal-box">
-                <strong>${typeName} (${genderName}) — ${size}:</strong> ${alert.count} em stock
+                <strong>${genderName} — ${typeName} — ${sizeLabel}</strong>: ${item.count} em stock
             </div>
         `;
     }
 
-    openInfoModal("Tamanhos com Stock Baixo", html);
+    openInfoModal("Stock baixo", html);
 }
 
 checkLowStock();
