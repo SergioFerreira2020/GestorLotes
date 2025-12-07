@@ -21,6 +21,9 @@ const SIZE_REGEX = new RegExp(
         // TAM / TAMANHO
         "\\b(?:tam(?:anho)?\\.?)[\\s:ºnº]*\\s*(?:\\d{1,2}|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
 
+        // LETTER SIZE RANGES (XS-M, L/XL, S a M, etc.)
+        "\\b(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\s*(?:[-/]|a)\\s*(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
+
         // MONTH RANGE MUST BE FIRST BEFORE NUMERIC MATCHES
         "\\b\\d{1,2}\\s*(?:[-/]|a)\\s*\\d{1,2}\\s*(?:m|meses|mês|mes)\\b",
 
@@ -39,7 +42,7 @@ const SIZE_REGEX = new RegExp(
         // CM SINGLE
         "\\b\\d{1,3}\\s*cm\\b",
 
-        // LETTER SIZES
+        // LETTER SIZES (single)
         "\\b(?:XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\\b",
 
         // NUMERIC (shoes or adult)
@@ -89,9 +92,17 @@ function extractSizeAndGender(description) {
 
     if (!match) return null;
 
-    let size = match[0].toUpperCase();
+      // ----------------------------------------------------
+    // 🔹 1) NORMALIZE LETTER SIZE RANGES (new feature)
+    // ----------------------------------------------------
+    size = size.replace(
+        /\b(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\s*(?:[-/]|A)\s*(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\b/i,
+        (m, a, b) => `${a.toUpperCase()}-${b.toUpperCase()}`
+    );
 
-    // Normalize month ranges
+    // ----------------------------------------------------
+    // 🔹 2) NORMALIZE MONTH RANGES & SINGLE MONTHS
+    // ----------------------------------------------------
     size = size.replace(
         /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
         "$1-$2 MESES"
@@ -100,7 +111,9 @@ function extractSizeAndGender(description) {
         "$1 MESES"
     );
 
-    // Normalize years
+    // ----------------------------------------------------
+    // 🔹 3) NORMALIZE YEAR RANGES & SINGLE YEARS
+    // ----------------------------------------------------
     size = size.replace(
         /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
         "$1-$2 ANOS"
