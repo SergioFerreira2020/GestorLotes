@@ -97,40 +97,42 @@ function extractSizeAndGender(description) {
 
     if (!match) return null;
 
-      // ----------------------------------------------------
-    // 🔹 1) NORMALIZE LETTER SIZE RANGES (new feature)
-    // ----------------------------------------------------
-    size = size.replace(
-        /\b(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\s*(?:[-/]|A)\s*(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|4XL|5XL|6XL|7XL|8XL)\b/i,
-        (m, a, b) => `${a.toUpperCase()}-${b.toUpperCase()}`
-    );
+    let size = match[0].toUpperCase();   // <-- SIZE IS DEFINED HERE ✔
 
-    // ----------------------------------------------------
-    // 🔹 2) NORMALIZE MONTH RANGES & SINGLE MONTHS
-    // ----------------------------------------------------
-    size = size.replace(
-        /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1-$2 MESES"
-    ).replace(
-        /\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
-        "$1 MESES"
-    );
+    /* ------------------------------------------
+       NORMALIZE MONTHS
+    ------------------------------------------ */
+    size = size
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+                 "$1-$2 MESES")
+        .replace(/\b(\d{1,2})\s*(M|MESES|MÊS|MES)\b/i,
+                 "$1 MESES");
 
-    // ----------------------------------------------------
-    // 🔹 3) NORMALIZE YEAR RANGES & SINGLE YEARS
-    // ----------------------------------------------------
-    size = size.replace(
-        /\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1-$2 ANOS"
-    ).replace(
-        /\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
-        "$1 ANOS"
-    );
+    /* ------------------------------------------
+       NORMALIZE YEARS
+    ------------------------------------------ */
+    size = size
+        .replace(/\b(\d{1,2})\s*(?:[-/]|A)\s*(\d{1,2})\s*(ANOS|A|Y)\b/i,
+                 "$1-$2 ANOS")
+        .replace(/\b(\d{1,2})\s*(ANOS|A|Y)\b/i,
+                 "$1 ANOS");
+
+    /* ------------------------------------------
+       NORMALIZE LETTER-SIZE RANGES  (NEW!)
+       - XS/M    → XS-M
+       - S a L   → S-L
+       - L-XXL   → L-XXL  (unchanged)
+    ------------------------------------------ */
+    size = size
+        .replace(/\b(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL)\s*(?:[-/]|A)\s*(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL)\b/gi,
+                 (full, a, b) => `${a.toUpperCase()}-${b.toUpperCase()}`);
 
     const gender = extractGender(text);
     const category = extractCategory(text);
 
-    // Age type detection
+    /* ------------------------------------------
+       AGE TYPE DETECTION
+    ------------------------------------------ */
     let ageType = "clothes";
 
     if (/MESES/.test(size)) ageType = "baby";
@@ -148,6 +150,7 @@ function extractSizeAndGender(description) {
         category
     };
 }
+
 
 /* ---------------------------------------------------
    Stock operations using TYPE-GENDER-SIZE
