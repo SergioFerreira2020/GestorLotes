@@ -262,35 +262,49 @@ function showClientModal(client) {
 
     document.getElementById("modalContent").innerHTML =
         client.lotes
-        .map(l => `
-            <div class="modal-box lote-line">
-                <div>
-                    <strong>Lote ${l.id}</strong> — ${l.description}
+            .map(l => `
+                <div class="modal-box lote-line">
+                    <span>Lote ${l.id} — ${l.description}</span>
+
+                    <button
+                        class="removeReservationBtn"
+                        data-lote-id="${l.id}"
+                    >
+                        Remover reserva
+                    </button>
                 </div>
-
-                <button 
-                    class="removeReservationBtn"
-                    data-lote="${l.id}">
-                    Remover reserva
-                </button>
-            </div>
-        `)
-        .join("");
-
+            `)
+            .join("");
 
     document.getElementById("modalOverlay").classList.remove("hidden");
+
+    bindRemoveReservationButtons();
+}
+
+
+function bindRemoveReservationButtons() {
+    document.querySelectorAll(".removeReservationBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            e.stopPropagation(); // don’t close modal
+
+            const loteId = btn.dataset.loteId;
+            if (!loteId) return;
+
+            openConfirmModal(
+                "Remover reserva?",
+                `<div class="modal-box">
+                    Remover a reserva do lote <strong>${loteId}</strong>?
+                </div>`,
+                async () => {
+                    await removeReservation(loteId);
+                }
+            );
+        });
+    });
 }
 
 document.getElementById("modalClose").onclick = () =>
     document.getElementById("modalOverlay").classList.add("hidden");
-
-
-document.querySelectorAll(".removeReservationBtn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-        const loteId = e.target.dataset.lote;
-        await removeReservation(loteId);
-    });
-});
 
 
 
@@ -349,29 +363,24 @@ async function actuallyDeliverAll(clientId, client) {
 
 
 async function removeReservation(loteId) {
-    openConfirmModal(
-        "Remover reserva?",
-        `<div class="modal-box">
-            O lote <strong>${loteId}</strong> ficará novamente disponível.
-        </div>`,
-        async () => {
-            try {
-                await updateDoc(doc(db, "lotes", loteId), {
-                    assignedTo: null,
-                    delivered: false
-                });
+    try {
+        await updateDoc(doc(db, "lotes", loteId), {
+            assignedTo: null,
+            delivered: false
+        });
 
-                openInfoModal("Reserva removida", "O lote voltou a ficar disponível.");
-                loadPendingDeliveries();
-                document.getElementById("modalOverlay").classList.add("hidden");
+        openInfoModal("Reserva removida", "O lote voltou a ficar disponível.");
 
-            } catch (err) {
-                console.error(err);
-                openInfoModal("Erro", "Não foi possível remover a reserva.");
-            }
-        }
-    );
+        document.getElementById("modalOverlay").classList.add("hidden");
+        loadPendingDeliveries();
+
+    } catch (err) {
+        console.error(err);
+        openInfoModal("Erro", "Não foi possível remover a reserva.");
+    }
 }
+
+
 
 
 
