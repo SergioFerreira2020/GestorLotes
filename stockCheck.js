@@ -65,7 +65,7 @@ async function checkLowStock() {
 
     if (alerts.length === 0) return;
 
-    let html = "";
+    let itemsHtml = "";
 
     for (const item of alerts) {
 
@@ -74,13 +74,18 @@ async function checkLowStock() {
         const categoryName = categoryMap[item.category] || "roupa";
         const sizeLabel = item.size;
 
-        html += `
+       itemsHtml += `
             <div class="modal-box">
                 <strong>${genderName} — ${categoryName} (${ageName}) — ${sizeLabel}</strong>:
                 ${item.count} em stock
             </div>
         `;
     }
+    const html = `
+        <div class="stock-scroll">
+            ${itemsHtml}
+        </div>
+    `;
 
     openInfoModal("Tamanhos com stock baixo", html);
 }
