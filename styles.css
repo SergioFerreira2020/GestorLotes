@@ -355,3 +355,23 @@ th.searching {
     background: transparent;
 }
 
+.lote-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.removeReservationBtn {
+    background: #8b1e1e;
+    border: none;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+.removeReservationBtn:hover {
+    background: #b92c2c;
+}

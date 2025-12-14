@@ -76,11 +76,16 @@ async function checkLowStock() {
 
        itemsHtml += `
             <div class="modal-box">
-                <strong>${genderName} — ${categoryName} (${ageName}) — ${sizeLabel}</strong>:
-                ${item.count} em stock
+                <div>
+                    <strong>${genderName} — ${categoryName} (${ageName}) — ${sizeLabel}</strong>
+                </div>
+                <div class="stock-count">
+                    ${item.count} em stock
+                </div>
             </div>
         `;
     }
+    
     const html = `
         <div class="stock-scroll">
             ${itemsHtml}

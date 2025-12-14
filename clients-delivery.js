@@ -262,14 +262,37 @@ function showClientModal(client) {
 
     document.getElementById("modalContent").innerHTML =
         client.lotes
-            .map(l => `<div class="modal-box">Lote ${l.id} — ${l.description}</div>`)
-            .join("");
+        .map(l => `
+            <div class="modal-box lote-line">
+                <div>
+                    <strong>Lote ${l.id}</strong> — ${l.description}
+                </div>
+
+                <button 
+                    class="removeReservationBtn"
+                    data-lote="${l.id}">
+                    Remover reserva
+                </button>
+            </div>
+        `)
+        .join("");
+
 
     document.getElementById("modalOverlay").classList.remove("hidden");
 }
 
 document.getElementById("modalClose").onclick = () =>
     document.getElementById("modalOverlay").classList.add("hidden");
+
+
+document.querySelectorAll(".removeReservationBtn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+        const loteId = e.target.dataset.lote;
+        await removeReservation(loteId);
+    });
+});
+
+
 
 /* ---------------------------------------------------
    Confirm "Deliver ALL" modal
@@ -323,6 +346,35 @@ async function actuallyDeliverAll(clientId, client) {
     openInfoModal("Sucesso!", "Todos os lotes foram entregues!");
     loadPendingDeliveries();
 }
+
+
+async function removeReservation(loteId) {
+    openConfirmModal(
+        "Remover reserva?",
+        `<div class="modal-box">
+            O lote <strong>${loteId}</strong> ficará novamente disponível.
+        </div>`,
+        async () => {
+            try {
+                await updateDoc(doc(db, "lotes", loteId), {
+                    assignedTo: null,
+                    delivered: false
+                });
+
+                openInfoModal("Reserva removida", "O lote voltou a ficar disponível.");
+                loadPendingDeliveries();
+                document.getElementById("modalOverlay").classList.add("hidden");
+
+            } catch (err) {
+                console.error(err);
+                openInfoModal("Erro", "Não foi possível remover a reserva.");
+            }
+        }
+    );
+}
+
+
+
 
 /* ---------------------------------------------------
    INIT
